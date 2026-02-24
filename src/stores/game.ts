@@ -10,33 +10,50 @@ function generateCode(): string {
     return code
 }
 
+const SESSION_KEY = 'game_session'
+
 export const useGameStore = defineStore('game', () => {
-    // ─── Server URL ──────────────────────────────────────────────────────────
-    // Use /colyseus path prefix so Vite can proxy ALL Colyseus traffic
-    // (HTTP matchmake + room WebSocket) through one reliable fixed-path rule.
-    //
-    //   Local  : ws://localhost:5173/colyseus → Vite strips /colyseus → ws://localhost:2567
-    //   Ngrok  : wss://xxx.ngrok.io/colyseus → ngrok → Vite → ws://localhost:2567
-    //
-    // A fixed prefix is far more reliable than a regex for WebSocket upgrade proxying.
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
     const gameServerUrl = `${protocol}//${window.location.host}/colyseus`
-
-    // REST endpoints use relative paths — Vite proxy handles /rooms, /roomByCode
     const gameApiBase = ''
-
     const client = new Colyseus.Client(gameServerUrl)
 
-    // ─── State ───────────────────────────────────────────────────────────────
-    // shallowRef is CRITICAL: Vue's deep reactive proxy breaks Colyseus Room's
-    // internal signal handlers (onJoin, onMessage …), preventing the view from
-    // switching from Lobby → Game when room.value is set.
     const room = shallowRef<Colyseus.Room | null>(null)
-    const currentRoomId = ref<string | null>(null)   // 4-char display code
+
+    // ─── Reactive game state ─────────────────────────────────────────────────
+    const gamePhase = ref('')
+    const gamePlayers = ref<any[]>([])
+    const gameCurrentTurnPlayerId = ref('')
+    const gameCurrentTrick = ref<any[]>([])
+    const gameMyHand = ref<any[]>([])
+
+    const currentRoomId = ref<string | null>(null)
     const lobbyRooms = ref<any[]>([])
     const chatMessages = ref<any[]>([])
     const isHost = ref(false)
     const authStore = useAuthStore()
+
+    // ─── Session persistence ─────────────────────────────────────────────────
+    function saveSession(r: Colyseus.Room, code: string, host: boolean) {
+        const token = (r as any).reconnectionToken || (r as any).reconnection_token || ''
+        localStorage.setItem(SESSION_KEY, JSON.stringify({
+            reconnectionToken: token,
+            roomId: r.id,
+            sessionId: r.sessionId,
+            code,
+            host,
+        }))
+        console.log('[session] saved, token:', token ? 'yes' : 'no', 'roomId:', r.id)
+    }
+    function clearSession() {
+        localStorage.removeItem(SESSION_KEY)
+    }
+    function getSavedSession() {
+        try {
+            const raw = localStorage.getItem(SESSION_KEY)
+            return raw ? JSON.parse(raw) : null
+        } catch { return null }
+    }
 
     // ─── Lobby ───────────────────────────────────────────────────────────────
     async function fetchRooms() {
@@ -56,12 +73,37 @@ export const useGameStore = defineStore('game', () => {
             if (!res.ok) return null
             const data = await res.json()
             return data.found ? data.roomId : null
-        } catch (e) {
-            return null
-        }
+        } catch { return null }
     }
 
     async function joinLobby() {
+        // Try reconnection first
+        const saved = getSavedSession()
+        if (saved) {
+            console.log('[reconnect] Attempting...', saved)
+            try {
+                let r: Colyseus.Room
+                if (saved.reconnectionToken) {
+                    r = await client.reconnect(saved.reconnectionToken)
+                } else {
+                    // Fallback: try joinById with same username
+                    r = await client.joinById(saved.roomId, {
+                        username: authStore.user?.username,
+                    })
+                }
+                currentRoomId.value = saved.code
+                isHost.value = saved.host
+                setupRoomListeners(r)
+                room.value = r
+                saveSession(r, saved.code, saved.host)
+                console.log('[reconnect] Success! Room:', r.id, 'Session:', r.sessionId)
+                return
+            } catch (e) {
+                console.log('[reconnect] Failed:', e)
+                clearSession()
+            }
+        }
+
         await fetchRooms()
         try {
             const lobby = await client.joinOrCreate('lobby')
@@ -86,20 +128,56 @@ export const useGameStore = defineStore('game', () => {
         }
     }
 
-    // ─── Room helpers ─────────────────────────────────────────────────────────
+    // ─── Room listeners ──────────────────────────────────────────────────────
     function setupRoomListeners(r: Colyseus.Room) {
+        r.onMessage('state_update', (data: any) => {
+            console.log('[state_update]', data.phase, 'players:', data.players?.length, 'turn:', data.currentTurnPlayerId)
+            gamePhase.value = data.phase || ''
+            gameCurrentTurnPlayerId.value = data.currentTurnPlayerId || ''
+            gameCurrentTrick.value = data.currentTrick || []
+            gamePlayers.value = (data.players || []).map((p: any) => ({
+                ...p,
+                isMe: p.sessionId === r.sessionId,
+            }))
+            if (data.code) currentRoomId.value = data.code
+        })
+
+        r.onMessage('my_hand', (hand: any[]) => {
+            console.log('[my_hand]', hand.length, 'cards')
+            gameMyHand.value = hand
+        })
+
         r.onMessage('chat_message', (message) => {
             chatMessages.value = [...chatMessages.value, message]
         })
         r.onMessage('error', (message) => {
             console.warn('Game error:', message)
         })
-        r.onMessage('game_started', () => {
-            console.log('Game started!')
+
+        r.onLeave((code) => {
+            console.log('[room] Left, code:', code)
+            if (code === 1000) {
+                // Consented leave — clean up
+                clearSession()
+                resetState()
+            }
+            // Abnormal close (1006) — session stays saved for reconnection
         })
     }
 
-    // ─── Actions ──────────────────────────────────────────────────────────────
+    function resetState() {
+        room.value = null
+        gamePhase.value = ''
+        gamePlayers.value = []
+        gameMyHand.value = []
+        gameCurrentTrick.value = []
+        gameCurrentTurnPlayerId.value = ''
+        chatMessages.value = []
+        isHost.value = false
+        currentRoomId.value = null
+    }
+
+    // ─── Actions ─────────────────────────────────────────────────────────────
     async function createGame() {
         try {
             const code = generateCode()
@@ -110,26 +188,24 @@ export const useGameStore = defineStore('game', () => {
             currentRoomId.value = code
             isHost.value = true
             setupRoomListeners(r)
-            room.value = r   // set last so shallowRef triggers the view switch
+            room.value = r
+            saveSession(r, code, true)
             console.log('[game] Created room', r.id, 'code:', code)
         } catch (e) {
-            console.error('[game] Create game error', e)
+            console.error('[game] Create error', e)
         }
     }
 
     async function joinGame(input: string) {
         try {
             let realRoomId = input
-
             if (input.length === 4) {
-                // Prefer REST lookup by code
                 const found = await findRoomByCode(input)
                 if (found) {
                     realRoomId = found
                 } else {
-                    // Fallback: search local lobby list
                     const inLobby = lobbyRooms.value.find(
-                        (r) => (r.metadata as any)?.code === input.toUpperCase()
+                        (r) => (r.metadata as any)?.code === input.toUpperCase() || (r as any).code === input.toUpperCase()
                     )
                     if (inLobby) realRoomId = inLobby.roomId
                 }
@@ -138,15 +214,14 @@ export const useGameStore = defineStore('game', () => {
             const r = await client.joinById(realRoomId, {
                 username: authStore.user?.username,
             })
-            // Wait a tick for state to sync
-            await new Promise(resolve => setTimeout(resolve, 200))
-            currentRoomId.value = (r.state as any)?.code || input
+            currentRoomId.value = input
             isHost.value = false
             setupRoomListeners(r)
-            room.value = r   // set last so shallowRef triggers the view switch
+            room.value = r
+            saveSession(r, input, false)
             console.log('[game] Joined room', r.id)
         } catch (e) {
-            console.error('[game] Join game error', e)
+            console.error('[game] Join error', e)
         }
     }
 
@@ -156,26 +231,15 @@ export const useGameStore = defineStore('game', () => {
 
     function leaveGame() {
         if (room.value) {
-            room.value.leave()
-            room.value = null
-            chatMessages.value = []
-            isHost.value = false
-            currentRoomId.value = null
+            room.value.leave(true)
+            clearSession()
+            resetState()
         }
     }
 
     return {
-        client,
-        room,
-        currentRoomId,
-        isHost,
-        lobbyRooms,
-        chatMessages,
-        joinLobby,
-        fetchRooms,
-        createGame,
-        joinGame,
-        leaveGame,
-        sendChat,
+        client, room, currentRoomId, isHost, lobbyRooms, chatMessages,
+        gamePhase, gamePlayers, gameCurrentTurnPlayerId, gameCurrentTrick, gameMyHand,
+        joinLobby, fetchRooms, createGame, joinGame, leaveGame, sendChat,
     }
 })
