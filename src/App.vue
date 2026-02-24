@@ -1,11 +1,14 @@
-<script setup></script>
+<script setup lang="ts">
+import { NConfigProvider, NMessageProvider, NGlobalStyle } from 'naive-ui'
+</script>
 
 <template>
-  <h1>You did it!</h1>
-  <p>
-    Visit <a href="https://vuejs.org/" target="_blank" rel="noopener">vuejs.org</a> to read the
-    documentation
-  </p>
+  <NConfigProvider>
+    <NGlobalStyle />
+    <NMessageProvider>
+      <div class="min-h-screen bg-gray-900 text-white">
+        <router-view />
+      </div>
+    </NMessageProvider>
+  </NConfigProvider>
 </template>
-
-<style scoped></style>
