@@ -6,11 +6,12 @@ import Chat from './Chat.vue'
 
 const gameStore = useGameStore()
 
+const showRules = ref(false)
+
 // ── All data comes from reactive store refs — no more reading room.state ───
 const mySessionId = computed(() => gameStore.room?.sessionId ?? '')
 const players = computed(() => gameStore.gamePlayers)
 const me = computed(() => players.value.find(p => p.isMe))
-const otherPlayers = computed(() => players.value.filter(p => !p.isMe))
 const myHand = computed(() => gameStore.gameMyHand)
 const currentTrick = computed(() => gameStore.gameCurrentTrick)
 const currentTurnPlayerId = computed(() => gameStore.gameCurrentTurnPlayerId)
@@ -30,11 +31,6 @@ function isPlayable(card: any) {
   const config = gameStore.gameConfig;
   const forcedRank = gameStore.gameIsForcedRank;
   
-  // A '2' can ALWAYS cut the trick (if enabled)
-  if (config?.enableSpecialTwo && card.rank === "2") {
-    return true;
-  }
-
   // If a forced rank is active, ONLY that rank can be played
   if (forcedRank) {
     return card.rank === forcedRank;
@@ -42,6 +38,17 @@ function isPlayable(card: any) {
 
   // If the trick is empty, anything is playable
   if (currentTrick.value.length === 0) {
+    return true;
+  }
+
+  // Check if we have enough cards of this rank to match the trick
+  const countInHand = myHand.value.filter((c: any) => c.rank === card.rank).length;
+  if (countInHand < currentTrick.value.length) {
+      return false;
+  }
+
+  // A '2' can ALWAYS cut the trick (if enabled), provided we have enough of them
+  if (config?.enableSpecialTwo && card.rank === "2") {
     return true;
   }
 
@@ -60,9 +67,7 @@ function isPlayable(card: any) {
   }
 
   // Otherwise, must play the same number of cards (except special 2s)
-  // But wait! in `isPlayable(card)` we can't know the exact intent if they haven't selected multiple cards yet.
-  // The backend will enforce if they play 1 card on a pair without completing a quad.
-  // Visually we just allow clicking it if it's >= trick rank. 
+  // Visually we allow clicking it if it's >= trick rank and we have enough cards.
   return true;
 }
 
@@ -95,15 +100,41 @@ watch([isMyTurn, hasPlayableCards, phase, myHand], ([myTurn, hasCards, currentPh
 // ── Card selection ─────────────────────────────────────────────────────────
 const selectedCards = ref([] as any[])
 
+const turnStartTime = ref(Date.now())
+const now = ref(Date.now())
+
+watch([currentTurnPlayerId, () => currentTrick.value], () => {
+  turnStartTime.value = Date.now()
+})
+
+watch(currentTurnPlayerId, () => {
+  selectedCards.value = []
+})
+
+const turnProgress = computed(() => {
+  const timeoutMs = gameStore.gameConfig?.turnTimeoutMs || 30000;
+  if (!timeoutMs) return 0;
+  const elapsed = now.value - turnStartTime.value;
+  const p = 1 - (elapsed / timeoutMs);
+  return Math.max(0, p);
+})
+
 function toggleCard(card: any) {
   if (!isMyTurn.value || !isPlayable(card)) return
   const key = `${card.suit}-${card.rank}`
   const idx = selectedCards.value.findIndex((c: any) => `${c.suit}-${c.rank}` === key)
+  
   if (idx === -1) {
-    if (selectedCards.value.length === 0 || selectedCards.value[0].rank === card.rank) {
-      selectedCards.value = [...selectedCards.value, card]
-    } else {
+    if (selectedCards.value.length === 0 || selectedCards.value[0].rank !== card.rank) {
       selectedCards.value = [card]
+    } else {
+      let limit = 4;
+      if (currentTrick.value.length > 0 && card.rank !== '2') {
+        limit = currentTrick.value.length;
+      }
+      if (selectedCards.value.length < limit) {
+        selectedCards.value = [...selectedCards.value, card]
+      }
     }
   } else {
     selectedCards.value = selectedCards.value.filter((_, i) => i !== idx)
@@ -184,9 +215,14 @@ watch(() => myHand.value.length, async () => {
   initSortable()
 })
 
+let timerInterval: any = null;
+
 onMounted(async () => {
   await nextTick()
   initSortable()
+  timerInterval = setInterval(() => {
+    now.value = Date.now()
+  }, 100)
 })
 
 onBeforeUnmount(() => {
@@ -196,6 +232,9 @@ onBeforeUnmount(() => {
   }
   if (autoPassTimer) {
       clearTimeout(autoPassTimer)
+  }
+  if (timerInterval) {
+      clearInterval(timerInterval)
   }
 })
 </script>
@@ -217,6 +256,9 @@ onBeforeUnmount(() => {
         </span>
       </div>
       <div class="flex items-center gap-3">
+        <button @click="showRules = true" class="px-3 py-2 rounded-lg text-sm" style="color: #64748b; border: 1px solid rgba(255,255,255,0.08); cursor: pointer; background: rgba(255,255,255,0.05);">
+          📖 Règles
+        </button>
         <button v-if="gameStore.isHost && (!phase || phase === 'LOBBY')"
           @click="startGame"
           class="px-4 py-2 rounded-lg text-sm font-semibold transition-all"
@@ -237,21 +279,30 @@ onBeforeUnmount(() => {
       <!-- Board -->
       <div class="flex-1 flex flex-col relative">
 
-        <!-- Other players -->
+        <!-- All players -->
         <div class="flex justify-center gap-4 p-4 flex-wrap">
-          <div v-for="player in otherPlayers" :key="player.id"
-            class="flex flex-col items-center gap-1 px-4 py-2 rounded-xl"
+          <div v-for="player in players" :key="player.id"
+            class="flex flex-col items-center gap-1 px-4 py-2 rounded-xl relative overflow-hidden"
             :style="{
               background: player.id === currentTurnPlayerId ? 'rgba(124,58,237,0.2)' : 'rgba(255,255,255,0.03)',
               border: player.id === currentTurnPlayerId ? '1px solid rgba(124,58,237,0.5)' : '1px solid rgba(255,255,255,0.06)',
             }">
-            <div class="text-sm font-semibold" style="color: #f1f5f9;">{{ player.username }}</div>
+            <div class="text-sm font-semibold" style="color: #f1f5f9;">
+              {{ player.username }} <span v-if="player.isMe" class="text-xs" style="color: #a855f7;">(Moi)</span>
+            </div>
             <div class="text-xs" style="color: #64748b;">🂠 {{ player.handCount }} cartes</div>
             <div v-if="player.id === currentTurnPlayerId" class="text-xs font-medium" style="color: #a855f7;">⚡ Son tour</div>
             <div v-if="player.role && player.role !== 'NEUTRE'"
               class="text-xs px-2 py-0.5 rounded-full font-medium"
               :style="{ background: 'rgba(0,0,0,0.3)', color: roleColors[player.role] }">
               {{ player.role }}
+            </div>
+            <div v-if="player.id === currentTurnPlayerId && phase === 'PLAY'" 
+                 class="absolute bottom-0 left-0 h-1 transition-all duration-100 ease-linear"
+                 :style="{ 
+                    width: `${turnProgress * 100}%`,
+                    background: turnProgress < 0.25 ? '#ef4444' : '#a855f7'
+                 }">
             </div>
           </div>
         </div>
@@ -297,7 +348,7 @@ onBeforeUnmount(() => {
             <span v-else-if="isMyTurn" style="color: #a855f7; font-weight: 600;">Sélectionne tes cartes puis clique Jouer</span>
             <span v-else>Tour de l'adversaire...</span>
           </div>
-          <div class="flex gap-2 justify-center overflow-x-auto pb-2" ref="handContainerRef">
+          <div class="flex gap-2 justify-center overflow-x-auto pt-4 pb-2" ref="handContainerRef">
             <div v-for="(card, idx) in myHand" :key="`${card.suit}-${card.rank}-${idx}`"
               :data-rank="card.rank"
               :data-suit="card.suit"
@@ -376,6 +427,31 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
+      </div>
+    </div>
+
+    <!-- Règles Modale -->
+    <div v-if="showRules" class="absolute inset-0 flex items-center justify-center z-50 bg-black/80 backdrop-blur-sm p-4" @click.self="showRules = false">
+      <div class="w-full max-w-lg rounded-2xl shadow-2xl flex flex-col overflow-hidden max-h-[80vh]" style="background: #0f172a; border: 1px solid rgba(255,255,255,0.1);">
+        <div class="p-6 border-b border-white/10 flex justify-between items-center">
+          <h2 class="text-xl font-bold text-white">📖 Règles du Président</h2>
+          <button @click="showRules = false" class="text-slate-400 hover:text-white transition-colors cursor-pointer p-1">✕</button>
+        </div>
+        <div class="p-6 overflow-y-auto text-sm text-slate-300 space-y-4">
+          <p><strong>Hiérarchie des cartes :</strong> 3, 4, 5, 6, 7, 8, 9, 10, Valet, Dame, Roi, As, 2.</p>
+          <p><strong>Le but :</strong> Se débarrasser de toutes ses cartes en premier.</p>
+          <p><strong>Déroulement :</strong> Le premier joueur pose une carte (ou une paire, brelan, carré). Les joueurs suivants doivent poser le <strong>même nombre de cartes</strong>, d'une valeur <strong>égale ou supérieure</strong>.</p>
+          <p><strong>Le 2 :</strong> C'est la carte spéciale. Elle permet de couper n'importe quel pli et donne instantanément la main au joueur qui l'a posée.</p>
+          <p><strong>Couper un pli :</strong> Jouer une carte de même valeur que la précédente oblige le joueur suivant à jouer cette même valeur (et non une valeur supérieure) ou à passer son tour.</p>
+          <p><strong>Le Carré :</strong> Si 4 cartes de même valeur se retrouvent sur la table (jouées en une ou plusieurs fois), le pli se termine immédiatement. Le joueur qui a complété le carré remporte le pli.</p>
+          <p><strong>Passer :</strong> Si vous ne pouvez ou ne voulez pas jouer, vous passez. Vous pourrez rejouer au prochain tour, sauf si tous les joueurs passent consécutivement.</p>
+          <p><strong>Rôles :</strong> Le 1er à finir est Président 👑, le 2ème Vice-Président 🥈, l'avant-dernier Vice-Trou du Cul 🥉, le dernier Trou du Cul 💩. À la manche suivante, le Président échange ses 2 pires cartes contre les 2 meilleures du TDC (et inversement). Idem pour 1 carte avec les Vices.</p>
+        </div>
+        <div class="p-4 border-t border-white/10 flex justify-end">
+           <button @click="showRules = false" class="px-4 py-2 rounded-lg text-sm font-semibold transition-all" style="background: rgba(255,255,255,0.1); color: white; cursor: pointer;">
+             Fermer
+           </button>
+        </div>
       </div>
     </div>
   </div>
