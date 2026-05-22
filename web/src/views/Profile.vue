@@ -2,6 +2,26 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import Button from '../components/Button.vue'
+import { 
+  Camera, 
+  Pencil, 
+  UserPlus, 
+  UserMinus, 
+  Check, 
+  X, 
+  Save, 
+  Palette, 
+  Upload, 
+  Users, 
+  ChevronRight,
+  Trophy,
+  Diamond,
+  Star,
+  Sparkles,
+  Leaf,
+  Gamepad2
+} from '@lucide/vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -224,107 +244,96 @@ onMounted(() => { fetchProfile(); fetchFriends() })
 watch(() => route.params.id, () => fetchProfile())
 
 function getInitials(username: string) { return (username || '?').slice(0, 2).toUpperCase() }
+
 function getMmrRank(mmr: number) {
-  if (mmr >= 500) return { label: 'Légende', color: '#fbbf24', icon: '🏆' }
-  if (mmr >= 300) return { label: 'Maître', color: '#a855f7', icon: '💎' }
-  if (mmr >= 150) return { label: 'Expert', color: '#3b82f6', icon: '⭐' }
-  if (mmr >= 50) return { label: 'Initié', color: '#10b981', icon: '🌿' }
-  if (mmr > 0) return { label: 'Novice', color: '#64748b', icon: '🌱' }
-  return { label: 'Débutant', color: '#475569', icon: '🎮' }
+  if (mmr >= 500) return { label: 'Légende', color: '#fbbf24', icon: Trophy }
+  if (mmr >= 300) return { label: 'Maître', color: '#d946ef', icon: Diamond }
+  if (mmr >= 150) return { label: 'Expert', color: '#3b82f6', icon: Star }
+  if (mmr >= 50) return { label: 'Initié', color: '#10b981', icon: Sparkles }
+  if (mmr > 0) return { label: 'Novice', color: '#64748b', icon: Leaf }
+  return { label: 'Débutant', color: '#475569', icon: Gamepad2 }
 }
 </script>
 
 <template>
-  <div class="min-h-screen" style="background: linear-gradient(135deg, #0f0f1a 0%, #1a1030 100%);">
-    <!-- Decorative blobs -->
-    <div class="fixed inset-0 overflow-hidden pointer-events-none opacity-30">
-      <div class="absolute w-96 h-96 rounded-full" style="background: radial-gradient(circle, #7c3aed 0%, transparent 70%); top: -10%; right: -5%; filter: blur(80px);"></div>
-      <div class="absolute w-72 h-72 rounded-full" style="background: radial-gradient(circle, #ec4899 0%, transparent 70%); bottom: 10%; left: -5%; filter: blur(80px);"></div>
-    </div>
-
-    <nav class="flex items-center justify-between px-8 py-4 relative z-10" style="border-bottom: 1px solid rgba(255,255,255,0.06); background: rgba(15,15,26,0.6); backdrop-filter: blur(12px);">
-      <div class="flex items-center gap-2 cursor-pointer" @click="router.push('/')">
-        <span class="text-2xl">🃏</span>
-        <span class="font-bold text-lg" style="color: #f1f5f9;">Président</span>
-      </div>
-      <button @click="router.push('/')" class="text-sm px-4 py-2 rounded-lg transition-all hover:bg-white/5" style="color: #64748b; border: 1px solid rgba(255,255,255,0.08);">← Retour</button>
-    </nav>
-
-    <div class="max-w-3xl mx-auto px-6 py-12 relative z-10">
+  <div class="px-8 py-10 relative">
+    <div class="w-full relative z-10">
       <div v-if="loading" class="flex items-center justify-center py-20">
-        <div class="w-10 h-10 rounded-full border-2 border-purple-500 border-t-transparent animate-spin"></div>
+        <div class="w-10 h-10 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
       </div>
 
       <div v-else-if="profileUser" class="space-y-6">
         <!-- Profile Header -->
-        <div class="rounded-2xl p-8 relative overflow-hidden"
-             style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); backdrop-filter: blur(12px);">
-          <div class="absolute inset-0 opacity-10 pointer-events-none" style="background: linear-gradient(135deg, #7c3aed 0%, transparent 60%);"></div>
+        <div class="rounded-2xl p-8 relative overflow-hidden bg-background-2 border"
+             style="border-color: rgba(255,255,255,0.06); backdrop-filter: blur(12px);">
+
           <div class="flex items-start justify-between relative gap-4 flex-wrap">
             <div class="flex items-center gap-6">
               <!-- Avatar display -->
               <div class="relative">
                 <div v-if="resolveAvatarUrl(profileUser.avatarUrl)"
-                  class="w-24 h-24 rounded-full overflow-hidden ring-2 ring-purple-500/50 ring-offset-2"
-                  style="ring-offset-color: transparent; background: #1e1b4b;">
+                  class="w-24 h-24 rounded-2xl overflow-hidden ring-2 ring-primary/30 bg-[#241e15]">
                   <img :src="resolveAvatarUrl(profileUser.avatarUrl)!" :alt="profileUser.username"
                     class="w-full h-full object-cover"
                     @error="(e: any) => { e.target.style.display='none' }" />
                 </div>
                 <div v-else
-                  class="w-24 h-24 rounded-full flex items-center justify-center text-2xl font-black ring-2 ring-purple-500/30"
-                  style="background: linear-gradient(135deg, #7c3aed, #a855f7); color: white;">
+                  class="w-24 h-24 rounded-2xl flex items-center justify-center text-2xl font-black ring-2 ring-primary/20 bg-gradient-to-br from-primary to-primary-light text-white">
                   {{ getInitials(profileUser.username) }}
                 </div>
                 <!-- Camera icon for own profile -->
                 <button v-if="isMyProfile" @click="openEditPanel"
-                  class="absolute -bottom-1 -right-1 w-8 h-8 rounded-full flex items-center justify-center transition-all hover:scale-110 cursor-pointer"
-                  style="background: linear-gradient(135deg, #7c3aed, #a855f7); box-shadow: 0 2px 8px rgba(124,58,237,0.5);">
-                  <span class="text-sm">✏️</span>
+                  class="absolute -bottom-1 -right-1 w-8 h-8 rounded-xl flex items-center justify-center transition-all hover:scale-110 cursor-pointer border border-primary-light/30 bg-gradient-to-br from-primary to-primary-light shadow-[0_4px_10px_rgba(155,113,52,0.3)] hover:shadow-[0_4px_12px_rgba(155,113,52,0.5)]">
+                  <Camera class="w-4 h-4 text-white" />
                 </button>
               </div>
 
               <div>
-                <h1 class="text-3xl font-black" style="color: #f1f5f9;">{{ profileUser.username }}</h1>
-                <p class="text-sm mt-1" style="color: #475569;">
+                <h1 class="text-3xl font-black text-slate-100">{{ profileUser.username }}</h1>
+                <p class="text-sm mt-1 text-slate-400">
                   Membre depuis {{ new Date(profileUser.createdAt).toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' }) }}
                 </p>
-                <div class="flex items-center gap-2 mt-2">
-                  <span>{{ getMmrRank(profileUser.mmr).icon }}</span>
-                  <span class="text-sm font-semibold px-2.5 py-0.5 rounded-full"
-                    :style="{ background: getMmrRank(profileUser.mmr).color + '22', color: getMmrRank(profileUser.mmr).color, border: `1px solid ${getMmrRank(profileUser.mmr).color}44` }">
+                <div class="flex items-center gap-2 mt-2.5">
+                  <component :is="getMmrRank(profileUser.mmr).icon" class="w-4 h-4" :style="{ color: getMmrRank(profileUser.mmr).color }" />
+                  <span class="text-xs font-bold px-2.5 py-0.5 rounded-full"
+                    :style="{ background: getMmrRank(profileUser.mmr).color + '15', color: getMmrRank(profileUser.mmr).color, border: `1px solid ${getMmrRank(profileUser.mmr).color}25` }">
                     {{ getMmrRank(profileUser.mmr).label }}
                   </span>
                 </div>
               </div>
             </div>
 
-            <div class="flex flex-col items-end gap-3">
+            <div class="flex flex-col items-end gap-3.5">
               <div class="text-right">
-                <div class="text-4xl font-mono font-black" style="color: #a855f7;">{{ profileUser.mmr }}</div>
-                <div class="text-xs font-semibold uppercase tracking-widest mt-0.5" style="color: #64748b;">Points MMR</div>
+                <div class="text-4xl font-mono font-black text-primary">{{ profileUser.mmr }}</div>
+                <div class="text-[10px] font-bold uppercase tracking-widest mt-0.5 text-slate-500">Points MMR</div>
               </div>
-              <button v-if="isMyProfile" @click="openEditPanel"
-                class="px-4 py-2 rounded-lg text-sm font-bold transition-all hover:scale-105"
-                style="background: rgba(139,92,246,0.15); color: #c4b5fd; border: 1px solid rgba(139,92,246,0.35); cursor: pointer;">
-                ✏️ Modifier le profil
-              </button>
-              <button v-if="!isMyProfile" @click="toggleFriend"
-                class="px-4 py-2 rounded-lg text-sm font-bold transition-all hover:scale-105"
-                :style="isFriend
-                  ? 'background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); cursor: pointer;'
-                  : 'background: rgba(16,185,129,0.1); color: #10b981; border: 1px solid rgba(16,185,129,0.3); cursor: pointer;'">
-                {{ isFriend ? '💔 Retirer' : '➕ Ajouter' }}
-              </button>
+              
+              <Button v-if="isMyProfile" @click="openEditPanel"
+                variant="secondary"
+                size="sm"
+                :icon="Pencil"
+              >
+                Modifier le profil
+              </Button>
+              
+              <Button v-if="!isMyProfile" @click="toggleFriend"
+                :variant="isFriend ? 'danger' : 'secondary'"
+                size="sm"
+                :icon="isFriend ? UserMinus : UserPlus"
+              >
+                {{ isFriend ? 'Retirer' : 'Ajouter' }}
+              </Button>
             </div>
           </div>
 
           <!-- Success toast inside card -->
           <Transition name="fade-down">
             <div v-if="editSuccess"
-              class="mt-4 px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2"
+              class="mt-4 px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2"
               style="background: rgba(16,185,129,0.1); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.2);">
-              ✅ {{ editSuccess }}
+              <Check class="w-4 h-4 text-emerald-400" />
+              {{ editSuccess }}
             </div>
           </Transition>
         </div>
@@ -332,54 +341,72 @@ function getMmrRank(mmr: number) {
         <!-- ── Edit Panel ──────────────────────────────────────────────────── -->
         <Transition name="edit-panel">
           <div v-if="showEditPanel && isMyProfile"
-            class="rounded-2xl overflow-hidden"
-            style="background: rgba(15,15,26,0.9); border: 1px solid rgba(139,92,246,0.3); backdrop-filter: blur(16px);">
+            class="rounded-2xl overflow-hidden bg-background-2 border"
+            style="border-color: rgba(139,92,246,0.2); backdrop-filter: blur(16px);">
 
             <!-- Panel header -->
-            <div class="flex items-center justify-between px-6 py-4" style="border-bottom: 1px solid rgba(255,255,255,0.06);">
-              <h2 class="text-base font-bold" style="color: #c4b5fd;">✏️ Modifier le profil</h2>
-              <button @click="showEditPanel = false" class="text-slate-500 hover:text-white transition-colors cursor-pointer text-xl leading-none w-7 h-7 flex items-center justify-center rounded hover:bg-white/10">✕</button>
+            <div class="flex items-center justify-between px-6 py-4 border-b border-white/5">
+              <div class="flex items-center gap-2 text-primary font-bold">
+                <Pencil class="w-4 h-4" />
+                <span>Modifier le profil</span>
+              </div>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                @click="showEditPanel = false"
+              >
+                <X class="w-4 h-4" />
+              </Button>
             </div>
 
             <!-- Username section -->
-            <div class="px-6 py-5" style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-              <label class="block text-xs font-bold uppercase tracking-wider mb-2" style="color: #64748b;">Pseudo</label>
+            <div class="px-6 py-5 border-b border-white/5">
+              <label class="block text-xs font-bold uppercase tracking-wider mb-2 text-slate-500">Pseudo</label>
               <div class="flex gap-3">
                 <input v-model="editUsername" type="text" placeholder="Nouveau pseudo"
-                  class="flex-1 rounded-lg px-4 py-2.5 text-sm outline-none transition-all"
-                  style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); color: #f1f5f9;"
+                  class="flex-1 rounded-xl px-4 py-2.5 text-sm outline-none transition-all"
+                  style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); color: #f1f5f9;"
                   @keyup.enter="saveUsername"
+                  @focus="($event.target as HTMLElement).style.borderColor='rgba(124, 58, 237, 0.4)'"
+                  @blur="($event.target as HTMLElement).style.borderColor='rgba(255,255,255,0.08)'"
                 />
-                <button @click="saveUsername" :disabled="editLoading"
-                  class="px-5 py-2.5 rounded-lg text-sm font-bold transition-all hover:scale-105 flex-shrink-0"
-                  style="background: linear-gradient(135deg, #7c3aed, #a855f7); color: white; cursor: pointer;"
-                  :style="editLoading ? 'opacity:0.7' : ''">
-                  {{ editLoading ? '...' : 'Sauvegarder' }}
-                </button>
+                <Button 
+                  @click="saveUsername" 
+                  :loading="editLoading"
+                  variant="primary"
+                  size="md"
+                  :icon="Save"
+                >
+                  Sauvegarder
+                </Button>
               </div>
               <div v-if="editError" class="mt-2 text-xs text-red-400">{{ editError }}</div>
             </div>
 
             <!-- Avatar section -->
             <div class="px-6 py-5">
-              <label class="block text-xs font-bold uppercase tracking-wider mb-3" style="color: #64748b;">Photo de profil</label>
+              <label class="block text-xs font-bold uppercase tracking-wider mb-3 text-slate-500">Photo de profil</label>
 
               <!-- Tabs -->
-              <div class="flex gap-1 p-1 rounded-lg mb-5" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06);">
-                <button @click="avatarTab = 'defaults'"
-                  class="flex-1 py-2 rounded-md text-sm font-semibold transition-all"
-                  :style="avatarTab === 'defaults'
-                    ? 'background: rgba(139,92,246,0.3); color: #c4b5fd;'
-                    : 'color: #64748b; cursor: pointer;'">
-                  🎨 Avatars par défaut
-                </button>
-                <button @click="avatarTab = 'upload'"
-                  class="flex-1 py-2 rounded-md text-sm font-semibold transition-all"
-                  :style="avatarTab === 'upload'
-                    ? 'background: rgba(139,92,246,0.3); color: #c4b5fd;'
-                    : 'color: #64748b; cursor: pointer;'">
-                  📷 Importer une photo
-                </button>
+              <div class="flex gap-1.5 p-1 rounded-xl mb-5" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);">
+                <Button 
+                  @click="avatarTab = 'defaults'"
+                  full-width
+                  size="sm"
+                  :variant="avatarTab === 'defaults' ? 'primary' : 'ghost'"
+                  :icon="Palette"
+                >
+                  Avatars par défaut
+                </Button>
+                <Button 
+                  @click="avatarTab = 'upload'"
+                  full-width
+                  size="sm"
+                  :variant="avatarTab === 'upload' ? 'primary' : 'ghost'"
+                  :icon="Camera"
+                >
+                  Importer une photo
+                </Button>
               </div>
 
               <!-- Default avatars grid -->
@@ -387,28 +414,26 @@ function getMmrRank(mmr: number) {
                 <div class="grid grid-cols-6 gap-3">
                   <button v-for="avatar in defaultAvatars" :key="avatar.url"
                     @click="applyDefaultAvatar(avatar.url)"
-                    class="group relative rounded-xl overflow-hidden transition-all hover:scale-110 cursor-pointer"
-                    :style="profileUser.avatarUrl === avatar.url
-                      ? 'ring: 2px; box-shadow: 0 0 0 2px #a855f7, 0 0 16px rgba(168,85,247,0.4); border-radius: 12px;'
-                      : 'box-shadow: 0 2px 8px rgba(0,0,0,0.3);'"
+                    class="group relative overflow-hidden transition-all hover:scale-105 cursor-pointer rounded-xl"
+                    :class="profileUser.avatarUrl === avatar.url
+                      ? 'ring-2 ring-primary shadow-[0_0_16px_rgba(155,113,52,0.3)]'
+                      : 'shadow-[0_2px_8px_rgba(0,0,0,0.2)]'"
                     :title="avatar.label">
                     <div class="w-full aspect-square flex items-center justify-center"
-                      style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);">
+                      style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);">
                       <img :src="avatar.url" :alt="avatar.label" class="w-12 h-12 object-contain" loading="lazy" />
                     </div>
                     <!-- Selected indicator -->
                     <div v-if="profileUser.avatarUrl === avatar.url"
-                      class="absolute inset-0 flex items-center justify-center"
-                      style="background: rgba(168,85,247,0.15);">
-                      <span class="text-lg">✓</span>
+                      class="absolute inset-0 flex items-center justify-center bg-primary/15">
+                      <Check class="w-5 h-5 text-primary font-bold" />
                     </div>
                     <!-- Hover overlay -->
-                    <div class="absolute inset-0 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
-                      style="background: rgba(139,92,246,0.2);">
+                    <div class="absolute inset-0 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity bg-primary/15">
                     </div>
                   </button>
                 </div>
-                <p class="text-xs mt-3" style="color: #334155;">Cliquez sur un avatar pour l'appliquer immédiatement.</p>
+                <p class="text-[10px] font-bold text-slate-500 uppercase mt-3.5 tracking-wider">Cliquez sur un avatar pour l'appliquer immédiatement.</p>
               </div>
 
               <!-- File upload -->
@@ -417,33 +442,36 @@ function getMmrRank(mmr: number) {
                 
                 <!-- Drop zone / preview -->
                 <div @click="triggerFileInput"
-                  class="border-2 border-dashed rounded-xl flex flex-col items-center justify-center gap-3 cursor-pointer transition-all hover:border-purple-500/60 hover:bg-purple-500/5"
-                  style="border-color: rgba(255,255,255,0.12); min-height: 140px; background: rgba(255,255,255,0.02);">
+                  class="border-2 border-dashed rounded-xl flex flex-col items-center justify-center gap-3 cursor-pointer transition-all hover:border-primary/40 hover:bg-primary/5"
+                  style="border-color: rgba(255,255,255,0.1); min-height: 140px; background: rgba(255,255,255,0.01);">
                   <div v-if="previewUrl" class="flex flex-col items-center gap-3 p-4 w-full">
-                    <img :src="previewUrl" alt="Aperçu" class="w-24 h-24 rounded-full object-cover ring-2 ring-purple-500/50" />
-                    <span class="text-xs" style="color: #64748b;">{{ selectedFile?.name }}</span>
+                    <img :src="previewUrl" alt="Aperçu" class="w-24 h-24 rounded-full object-cover ring-2 ring-primary/40 bg-[#241e15]" />
+                    <span class="text-xs text-slate-400 font-semibold">{{ selectedFile?.name }}</span>
                   </div>
                   <div v-else class="flex flex-col items-center gap-2 p-6">
-                    <span class="text-3xl">📷</span>
-                    <span class="text-sm font-semibold" style="color: #94a3b8;">Cliquez pour choisir une photo</span>
-                    <span class="text-xs" style="color: #475569;">JPEG, PNG, GIF, WebP — max 3 Mo</span>
+                    <Upload class="w-8 h-8 text-slate-400 mb-1" />
+                    <span class="text-sm font-bold text-slate-300">Cliquez pour choisir une photo</span>
+                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">JPEG, PNG, GIF, WebP — max 3 Mo</span>
                   </div>
                 </div>
 
-                <div v-if="uploadError" class="text-sm p-3 rounded-lg" style="background: rgba(239,68,68,0.1); color: #f87171; border: 1px solid rgba(239,68,68,0.2);">{{ uploadError }}</div>
+                <div v-if="uploadError" class="text-sm p-3 rounded-xl" style="background: rgba(239,68,68,0.1); color: #f87171; border: 1px solid rgba(239,68,68,0.2);">{{ uploadError }}</div>
 
                 <div class="flex gap-3">
-                  <button v-if="previewUrl" @click="previewUrl = null; selectedFile = null"
-                    class="px-4 py-2.5 rounded-lg text-sm font-semibold transition-all"
-                    style="background: rgba(255,255,255,0.06); color: #94a3b8; border: 1px solid rgba(255,255,255,0.1); cursor: pointer;">
+                  <Button v-if="previewUrl" @click="previewUrl = null; selectedFile = null"
+                    variant="secondary"
+                    size="md"
+                  >
                     Annuler
-                  </button>
-                  <button v-if="selectedFile" @click="uploadAvatar" :disabled="uploadLoading"
-                    class="flex-1 py-2.5 rounded-lg text-sm font-bold transition-all hover:scale-[1.02]"
-                    style="background: linear-gradient(135deg, #7c3aed, #a855f7); color: white; cursor: pointer; box-shadow: 0 4px 15px rgba(124,58,237,0.3);"
-                    :style="uploadLoading ? 'opacity:0.7' : ''">
-                    {{ uploadLoading ? 'Upload en cours...' : '⬆️ Envoyer la photo' }}
-                  </button>
+                  </Button>
+                  <Button v-if="selectedFile" @click="uploadAvatar" :loading="uploadLoading"
+                    variant="primary"
+                    size="md"
+                    full-width
+                    :icon="Upload"
+                  >
+                    Envoyer la photo
+                  </Button>
                 </div>
               </div>
             </div>
@@ -451,38 +479,53 @@ function getMmrRank(mmr: number) {
         </Transition>
 
         <!-- Friends List -->
-        <div v-if="isMyProfile" class="rounded-2xl p-6" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); backdrop-filter: blur(8px);">
-          <h2 class="text-lg font-bold mb-4" style="color: #f1f5f9;">👥 Mes Amis</h2>
-          <div v-if="friends.length === 0" class="text-sm py-4 text-center" style="color: #475569;">
-            Vous n'avez pas encore d'amis.
-            <router-link to="/leaderboard" style="color: #a855f7;" class="hover:underline ml-1">Voir le classement</router-link> pour en ajouter !
+        <div v-if="isMyProfile" class="rounded-2xl p-6 bg-background-2 border" style="border-color: rgba(255,255,255,0.04); backdrop-filter: blur(8px);">
+          <div class="flex items-center gap-2 text-slate-200 font-bold mb-5">
+            <Users class="w-5 h-5 text-primary" />
+            <h2 class="text-lg">Mes Amis</h2>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-primary/20 text-primary border border-primary-light/20 font-mono">{{ friends.length }}</span>
           </div>
+          <div v-if="friends.length === 0" class="text-sm py-8 text-center text-slate-500 font-semibold" style="border: 1px dashed rgba(255,255,255,0.05); border-radius: 16px;">
+            Vous n'avez pas encore d'amis.
+            <router-link to="/leaderboard" class="text-primary hover:underline font-bold ml-1">Voir le classement</router-link> pour en ajouter !
+          </div>
+          
           <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div v-for="friend in friends" :key="friend.id"
                  @click="router.push(`/profile/${friend.id}`)"
                  class="rounded-xl p-4 flex items-center gap-3 cursor-pointer hover:bg-white/5 transition-all group"
-                 style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);">
-              <div v-if="resolveAvatarUrl(friend.avatarUrl)" class="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
+                 style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);">
+              <div v-if="resolveAvatarUrl(friend.avatarUrl)" class="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0">
                 <img :src="resolveAvatarUrl(friend.avatarUrl)!" :alt="friend.username" class="w-full h-full object-cover" @error="(e: any) => e.target.style.display='none'" />
               </div>
-              <div v-else class="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-bold"
-                   style="background: linear-gradient(135deg, #7c3aed44, #a855f744); color: #c4b5fd; border: 1px solid rgba(139,92,246,0.2);">
+              <div v-else class="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center text-sm font-bold bg-gradient-to-br from-primary/20 to-primary-light/20 text-primary-light border border-primary/15">
                 {{ getInitials(friend.username) }}
               </div>
               <div class="flex-1 min-w-0">
-                <div class="font-semibold truncate group-hover:text-purple-300 transition-colors" style="color: #f1f5f9;">{{ friend.username }}</div>
-                <div class="font-mono text-xs" style="color: #64748b;">{{ friend.mmr }} MMR</div>
+                <div class="font-bold truncate group-hover:text-primary-light transition-colors text-slate-200" style="color: #f1f5f9;">{{ friend.username }}</div>
+                <div class="font-mono text-xs text-slate-400" style="color: #64748b;">{{ friend.mmr }} <span class="text-[10px] text-slate-500 font-bold uppercase">MMR</span></div>
               </div>
-              <span class="text-slate-600 group-hover:text-purple-400 transition-colors">→</span>
+              <ChevronRight class="w-4 h-4 text-slate-600 group-hover:text-primary transition-colors" />
             </div>
           </div>
         </div>
       </div>
 
-      <div v-else class="text-center py-20" style="color: #ef4444;">Utilisateur introuvable</div>
+      <div v-else class="text-center py-20 font-bold text-red-400">Utilisateur introuvable</div>
     </div>
   </div>
 </template>
+
+<style scoped>
+.edit-panel-enter-active { animation: editIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+.edit-panel-leave-active { animation: editOut 0.2s ease-in forwards; }
+@keyframes editIn { 0% { opacity: 0; transform: translateY(-10px); } 100% { opacity: 1; transform: translateY(0); } }
+@keyframes editOut { 0% { opacity: 1; } 100% { opacity: 0; transform: translateY(-6px); } }
+
+.fade-down-enter-active, .fade-down-leave-active { transition: all 0.3s ease; }
+.fade-down-enter-from, .fade-down-leave-to { opacity: 0; transform: translateY(-8px); }
+</style>
+
 
 <style scoped>
 .edit-panel-enter-active { animation: editIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }

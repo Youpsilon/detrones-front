@@ -32,7 +32,7 @@ async function handleRegister() {
 
 <template>
   <div class="min-h-screen flex items-center justify-center px-4" style="background: #0f0f1a;">
-    <div class="absolute inset-0 overflow-hidden pointer-events-none">
+    <div class="absolute overflow-hidden pointer-events-none">
       <div class="absolute top-1/3 left-1/2 -translate-x-1/2 w-96 h-96 rounded-full opacity-20"
            style="background: radial-gradient(circle, #7c3aed, transparent); filter: blur(60px);"></div>
     </div>

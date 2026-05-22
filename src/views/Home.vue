@@ -10,7 +10,7 @@ const gameStore = useGameStore()
 
 <template>
   <!-- Vue en jeu : plein écran -->
-  <div v-if="gameStore.room" class="fixed inset-0 z-50" style="background: #0f0f1a;">
+  <div v-if="gameStore.room" class="fixed z-50" style="background: #0f0f1a;">
     <Game />
   </div>
 

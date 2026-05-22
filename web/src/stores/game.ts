@@ -123,11 +123,19 @@ export const useGameStore = defineStore('game', () => {
             }
         }
 
+        // Initial REST fetch to populate rooms immediately
         await fetchRooms()
         try {
             const lobby = await client.joinOrCreate('lobby')
             lobby.onMessage('rooms', (rooms) => {
-                lobbyRooms.value = [...rooms]
+                // Only overwrite if Colyseus has real data — avoid clearing REST data
+                // when Colyseus sends an empty list before metadata propagates
+                if (rooms && rooms.length > 0) {
+                    lobbyRooms.value = [...rooms]
+                } else {
+                    // Re-fetch REST so player data is always up to date
+                    fetchRooms()
+                }
             })
             lobby.onMessage('+', ([roomId, roomData]: [string, any]) => {
                 const index = lobbyRooms.value.findIndex((r) => r.roomId === roomId)

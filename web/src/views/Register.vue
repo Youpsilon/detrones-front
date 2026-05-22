@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import Button from '../components/Button.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -53,20 +54,30 @@ function useSuggestion() {
 </script>
 
 <template>
-  <div class="min-h-screen flex items-center justify-center px-4" style="background: #0f0f1a;">
-    <div class="absolute inset-0 overflow-hidden pointer-events-none">
-      <div class="absolute top-1/3 left-1/2 -translate-x-1/2 w-96 h-96 rounded-full opacity-20"
-           style="background: radial-gradient(circle, #7c3aed, transparent); filter: blur(60px);"></div>
-    </div>
+  <div class="min-h-screen flex items-center justify-center px-4 relative overflow-hidden bg-background-1">
+
 
     <div class="w-full max-w-sm relative">
-      <div class="text-center mb-8">
-        <div class="text-4xl mb-2">🃏</div>
-        <h1 class="text-3xl font-bold" style="color: #f1f5f9;">Président</h1>
-        <p class="text-sm mt-1" style="color: #64748b;">Le jeu de cartes en ligne</p>
+      <!-- Logo -->
+      <div class="text-center mb-8 flex flex-col items-center">
+        <div class="mb-3 flex justify-center">
+          <img 
+            src="/logo.png" 
+            alt="Président Logo" 
+            class="w-14 h-auto object-contain"
+          />
+        </div>
+        <div>
+          <h1 class="font-extrabold text-3xl tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-primary-light via-primary to-primary-dark uppercase leading-none font-cinzel" style="filter: drop-shadow(0px 2px 3px rgba(0, 0, 0, 0.45));">Président</h1>
+          <div class="flex items-center justify-center gap-2.5 mt-3 w-full">
+            <span class="h-[1px] w-5 bg-primary/50"></span>
+            <span class="text-[9px] font-bold text-primary-light tracking-[0.25em] uppercase">Online Arena</span>
+            <span class="h-[1px] w-5 bg-primary/50"></span>
+          </div>
+        </div>
       </div>
 
-      <div class="rounded-2xl p-8" style="background: rgba(22,33,62,0.8); border: 1px solid rgba(255,255,255,0.08); backdrop-filter: blur(12px);">
+      <div class="rounded-2xl p-8 bg-background-2 border" style="border-color: rgba(255,255,255,0.08); backdrop-filter: blur(12px);">
         <h2 class="text-xl font-semibold mb-6" style="color: #f1f5f9;">Créer un compte</h2>
 
         <div class="space-y-4">
@@ -100,31 +111,34 @@ function useSuggestion() {
 
           <!-- Username suggestion -->
           <div v-if="usernameSuggestion"
-            class="flex items-center justify-between p-3 rounded-lg"
-            style="background: rgba(139,92,246,0.1); border: 1px solid rgba(139,92,246,0.3);">
-            <span class="text-sm" style="color: #c4b5fd;">
+            class="flex items-center justify-between p-3 rounded-xl bg-primary/10 border border-primary/30">
+            <span class="text-sm text-primary-light">
               💡 Essayez : <strong>{{ usernameSuggestion }}</strong>
             </span>
-            <button
+            <Button
               @click="useSuggestion"
-              class="text-xs px-3 py-1.5 rounded-lg font-semibold transition-all hover:scale-105"
-              style="background: rgba(139,92,246,0.3); color: #e9d5ff; cursor: pointer; border: 1px solid rgba(139,92,246,0.5);">
+              size="sm"
+              variant="secondary"
+            >
               Utiliser
-            </button>
+            </Button>
           </div>
 
-          <button @click="handleRegister" :disabled="loading"
-            class="w-full py-3 rounded-lg font-semibold text-sm transition-all mt-2"
-            style="background: linear-gradient(135deg, #7c3aed, #a855f7); color: white; cursor: pointer;"
-            :style="loading ? 'opacity: 0.7' : ''"
+          <Button 
+            @click="handleRegister" 
+            :loading="loading" 
+            variant="primary" 
+            full-width
+            size="lg"
+            class="mt-2"
           >
-            {{ loading ? 'Création...' : 'Créer le compte' }}
-          </button>
+            Créer le compte
+          </Button>
         </div>
 
         <p class="text-center text-sm mt-6" style="color: #64748b;">
           Déjà un compte ?
-          <router-link to="/login" style="color: #a855f7;" class="font-medium hover:underline">Se connecter</router-link>
+          <router-link to="/login" style="color: var(--accent);" class="font-medium hover:underline">Se connecter</router-link>
         </p>
       </div>
     </div>

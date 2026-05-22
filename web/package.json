@@ -9,6 +9,7 @@
         "preview": "vite preview"
     },
     "dependencies": {
+        "@lucide/vue": "^1.16.0",
         "@president/shared": "workspace:*",
         "autoprefixer": "^10.4.0",
         "colyseus.js": "^0.15.28",

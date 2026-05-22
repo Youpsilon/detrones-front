@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import Button from '../components/Button.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -31,23 +32,31 @@ async function handleLogin() {
 </script>
 
 <template>
-  <div class="min-h-screen flex items-center justify-center px-4" style="background: #0f0f1a;">
-    <!-- Background glow -->
-    <div class="absolute inset-0 overflow-hidden pointer-events-none">
-      <div class="absolute top-1/3 left-1/2 -translate-x-1/2 w-96 h-96 rounded-full opacity-20"
-           style="background: radial-gradient(circle, #7c3aed, transparent); filter: blur(60px);"></div>
-    </div>
+  <div class="min-h-screen flex items-center justify-center px-4 relative overflow-hidden bg-background-1">
+
 
     <div class="w-full max-w-sm relative">
       <!-- Logo -->
-      <div class="text-center mb-8">
-        <div class="text-4xl mb-2">🃏</div>
-        <h1 class="text-3xl font-bold" style="color: #f1f5f9;">Président</h1>
-        <p class="text-sm mt-1" style="color: #64748b;">Le jeu de cartes en ligne</p>
+      <div class="text-center mb-8 flex flex-col items-center">
+        <div class="mb-3 flex justify-center">
+          <img 
+            src="/logo.png" 
+            alt="Président Logo" 
+            class="w-14 h-auto object-contain"
+          />
+        </div>
+        <div>
+          <h1 class="font-extrabold text-3xl tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-primary-light via-primary to-primary-dark uppercase leading-none font-cinzel" style="filter: drop-shadow(0px 2px 3px rgba(0, 0, 0, 0.45));">Président</h1>
+          <div class="flex items-center justify-center gap-2.5 mt-3 w-full">
+            <span class="h-[1px] w-5 bg-primary/50"></span>
+            <span class="text-[9px] font-bold text-primary-light tracking-[0.25em] uppercase">Online Arena</span>
+            <span class="h-[1px] w-5 bg-primary/50"></span>
+          </div>
+        </div>
       </div>
 
       <!-- Card -->
-      <div class="rounded-2xl p-8" style="background: rgba(22,33,62,0.8); border: 1px solid rgba(255,255,255,0.08); backdrop-filter: blur(12px);">
+      <div class="rounded-2xl p-8 bg-background-2 border" style="border-color: rgba(255,255,255,0.08); backdrop-filter: blur(12px);">
         <h2 class="text-xl font-semibold mb-6" style="color: #f1f5f9;">Connexion</h2>
 
         <div class="space-y-4">
@@ -56,7 +65,7 @@ async function handleLogin() {
             <input v-model="formValue.email" type="email" placeholder="ton@email.com"
               class="w-full rounded-lg px-4 py-3 text-sm outline-none transition-all"
               style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #f1f5f9;"
-              @focus="($event.target as HTMLElement).style.borderColor='#7c3aed'"
+              @focus="($event.target as HTMLElement).style.borderColor='var(--primary)'"
               @blur="($event.target as HTMLElement).style.borderColor='rgba(255,255,255,0.1)'"
             />
           </div>
@@ -66,7 +75,7 @@ async function handleLogin() {
               class="w-full rounded-lg px-4 py-3 text-sm outline-none transition-all"
               style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #f1f5f9;"
               @keyup.enter="handleLogin"
-              @focus="($event.target as HTMLElement).style.borderColor='#7c3aed'"
+              @focus="($event.target as HTMLElement).style.borderColor='var(--primary)'"
               @blur="($event.target as HTMLElement).style.borderColor='rgba(255,255,255,0.1)'"
             />
           </div>
@@ -75,18 +84,21 @@ async function handleLogin() {
             {{ error }}
           </div>
 
-          <button @click="handleLogin" :disabled="loading"
-            class="w-full py-3 rounded-lg font-semibold text-sm transition-all mt-2"
-            style="background: linear-gradient(135deg, #7c3aed, #a855f7); color: white;"
-            :style="loading ? 'opacity: 0.7' : 'cursor: pointer;'"
+          <Button 
+            @click="handleLogin" 
+            :loading="loading" 
+            variant="primary" 
+            full-width
+            size="lg"
+            class="mt-2"
           >
-            {{ loading ? 'Connexion...' : 'Se connecter' }}
-          </button>
+            Se connecter
+          </Button>
         </div>
 
         <p class="text-center text-sm mt-6" style="color: #64748b;">
           Pas de compte ?
-          <router-link to="/register" style="color: #a855f7;" class="font-medium hover:underline">S'inscrire</router-link>
+          <router-link to="/register" style="color: var(--accent);" class="font-medium hover:underline">S'inscrire</router-link>
         </p>
       </div>
     </div>

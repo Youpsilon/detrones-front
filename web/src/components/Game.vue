@@ -3,6 +3,28 @@ import { computed, ref, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
 import { useGameStore } from '../stores/game'
 import Sortable from 'sortablejs'
 import Chat from './Chat.vue'
+import Button from './Button.vue'
+import {
+  Crown,
+  Medal,
+  User,
+  Frown,
+  Skull,
+  Settings,
+  Eye,
+  BookOpen,
+  Play,
+  LogOut,
+  Check,
+  Zap,
+  Lock,
+  RefreshCw,
+  Loader2,
+  Sparkles,
+  Flame,
+  Tornado,
+  X
+} from '@lucide/vue'
 
 const gameStore = useGameStore()
 
@@ -221,17 +243,24 @@ function isRed(suit: string) { return ['D', 'H'].includes(suit) }
 
 const roleColors: Record<string, string> = {
   PRESIDENT: '#f59e0b',
-  VICE_PRESIDENT: '#a855f7',
+  VICE_PRESIDENT: '#d946ef',
   VICE_TDC: '#64748b',
   TDC: '#ef4444',
   NEUTRE: '#475569',
 }
-const roleIcons: Record<string, string> = {
-  PRESIDENT: '👑',
-  VICE_PRESIDENT: '🥈',
-  VICE_TDC: '🥉',
-  TDC: '💩',
-  NEUTRE: '👤',
+const roleIcons = {
+  PRESIDENT: Crown,
+  VICE_PRESIDENT: Medal,
+  NEUTRE: User,
+  VICE_TDC: Frown,
+  TDC: Skull,
+}
+
+const cinematicIcons = {
+  quad: Flame,
+  revolution: Tornado,
+  president: Crown,
+  tdc: Skull,
 }
 
 function getMmrText(role: string) {
@@ -349,7 +378,7 @@ const currentEventStyle = computed(() => {
 </script>
 
 <template>
-  <div class="flex flex-col h-screen overflow-hidden" style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4c1d95 100%); position: relative;">
+  <div class="flex flex-col h-screen overflow-hidden bg-background-1" style="position: relative;">
     
 
 
@@ -358,10 +387,14 @@ const currentEventStyle = computed(() => {
       <TransitionGroup name="toast">
         <div v-for="notif in gameStore.systemNotifications" :key="notif.id"
           class="px-4 py-3 rounded-xl flex items-start gap-3 shadow-2xl border pointer-events-auto backdrop-blur-md"
-          :style="notif.sender === '👑 Président' 
+          :style="notif.sender && notif.sender.includes('Président')
             ? 'background: rgba(245, 158, 11, 0.18); border-color: rgba(245, 158, 11, 0.45); box-shadow: 0 8px 32px rgba(245, 158, 11, 0.2); color: #fef3c7;' 
-            : 'background: rgba(99, 102, 241, 0.18); border-color: rgba(99, 102, 241, 0.35); box-shadow: 0 8px 32px rgba(99, 102, 241, 0.15); color: #e0e7ff;'">
-          <span class="text-xl leading-none select-none mt-0.5 flex-shrink-0">{{ notif.sender === '👑 Président' ? '👑' : '⚡' }}</span>
+            : 'background: rgba(var(--primary-rgb), 0.18); border-color: rgba(var(--primary-rgb), 0.35); box-shadow: 0 8px 32px rgba(var(--primary-rgb), 0.15); color: #fef3c7;' ">
+          <component 
+            :is="notif.sender && notif.sender.includes('Président') ? Crown : Zap" 
+            class="w-5 h-5 flex-shrink-0 mt-0.5" 
+            :class="notif.sender && notif.sender.includes('Président') ? 'text-amber-400' : 'text-primary'"
+          />
           <div class="flex-1 min-w-0">
             <span class="block font-black uppercase tracking-widest opacity-70 mb-0.5" style="font-size: 0.6rem;">{{ notif.sender }}</span>
             <p class="text-sm font-semibold text-white leading-snug break-words">{{ notif.text }}</p>
@@ -372,8 +405,8 @@ const currentEventStyle = computed(() => {
 
     <!-- Background abstract shapes -->
     <div class="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none opacity-40">
-      <div class="absolute w-96 h-96 rounded-full" style="background: radial-gradient(circle, #ec4899 0%, transparent 70%); top: -10%; left: -10%; filter: blur(60px);"></div>
-      <div class="absolute w-96 h-96 rounded-full" style="background: radial-gradient(circle, #8b5cf6 0%, transparent 70%); bottom: -10%; right: -10%; filter: blur(60px);"></div>
+      <div class="absolute w-96 h-96 rounded-full" style="background: radial-gradient(circle, rgba(var(--primary-rgb), 0.35) 0%, transparent 70%); top: -10%; left: -10%; filter: blur(60px);"></div>
+      <div class="absolute w-96 h-96 rounded-full" style="background: radial-gradient(circle, rgba(var(--primary-light-rgb), 0.2) 0%, transparent 70%); bottom: -10%; right: -10%; filter: blur(60px);"></div>
     </div>
 
     <!-- Header -->
@@ -384,39 +417,50 @@ const currentEventStyle = computed(() => {
             style="background-image: linear-gradient(to right, #e879f9, #c084fc);">
           Président
         </h1>
-        <div class="text-xs font-mono px-3 py-1 rounded-full"
-          style="background: rgba(255,255,255,0.1); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.1);">
+        <div class="text-xs font-mono px-3 py-1.5 rounded-xl border"
+          style="background: rgba(255,255,255,0.04); color: #cbd5e1; border-color: rgba(255,255,255,0.08);">
           Code: <span class="font-bold text-white">{{ gameStore.currentRoomId }}</span>
         </div>
-        <button v-if="gameStore.gameConfig" @click="showGameSettings = true"
-          class="text-xs text-slate-300 hover:text-white transition-colors cursor-pointer flex items-center gap-1 bg-white/5 px-2 py-1 rounded-lg">
-          <span>⚙️ Paramètres</span>
-        </button>
+        <Button v-if="gameStore.gameConfig" @click="showGameSettings = true"
+          variant="secondary"
+          size="sm"
+          :icon="Settings"
+        >
+          Paramètres
+        </Button>
 
         <!-- Spectator badge -->
         <div v-if="amISpectator"
-          class="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold animate-pulse"
-          style="background: rgba(255,255,255,0.08); color: #94a3b8; border: 1px solid rgba(255,255,255,0.15);">
-          👁️ Mode Spectateur
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold animate-pulse"
+          style="background: rgba(255,255,255,0.04); color: #94a3b8; border: 1px solid rgba(255,255,255,0.08);">
+          <Eye class="w-3.5 h-3.5 text-slate-400" />
+          <span>Mode Spectateur</span>
         </div>
       </div>
       <div class="flex gap-3">
-        <button @click="showRules = true"
-          class="px-4 py-2 rounded-lg text-sm font-semibold transition-all hover:bg-white/10"
-          style="background: rgba(255,255,255,0.05); color: #e2e8f0; border: 1px solid rgba(255,255,255,0.1); cursor: pointer;">
-          📖 Règles
-        </button>
-        <button v-if="gameStore.isHost && (!phase || phase === 'LOBBY')"
+        <Button @click="showRules = true"
+          variant="secondary"
+          size="sm"
+          :icon="BookOpen"
+        >
+          Règles
+        </Button>
+        <Button v-if="gameStore.isHost && (!phase || phase === 'LOBBY')"
           @click="startGame"
-          class="px-5 py-2 rounded-lg text-sm font-bold transition-all hover:scale-105"
-          style="background: linear-gradient(135deg, #ec4899, #8b5cf6); color: white; cursor: pointer; box-shadow: 0 4px 15px rgba(236,72,153,0.4);">
-          🚀 Lancer la partie
-        </button>
-        <button @click="gameStore.leaveGame"
-          class="px-4 py-2 rounded-lg text-sm font-semibold transition-all hover:bg-red-500/20"
-          style="background: rgba(239,68,68,0.1); color: #fca5a5; border: 1px solid rgba(239,68,68,0.2); cursor: pointer;">
+          variant="primary"
+          size="sm"
+          :icon="Play"
+          class="shadow-fuchsia-600/20"
+        >
+          Lancer la partie
+        </Button>
+        <Button @click="gameStore.leaveGame"
+          variant="danger"
+          size="sm"
+          :icon="LogOut"
+        >
           Quitter
-        </button>
+        </Button>
       </div>
     </div>
 
@@ -444,16 +488,15 @@ const currentEventStyle = computed(() => {
               <div v-if="player.avatarUrl" class="w-8 h-8 rounded-full overflow-hidden ring-1 ring-white/20">
                 <img :src="player.avatarUrl.startsWith('http') ? player.avatarUrl : `http://localhost:3000${player.avatarUrl}`" :alt="player.username" class="w-full h-full object-cover" @error="(e: any) => e.target.style.display='none'" />
               </div>
-              <div v-else class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ring-1 ring-white/20"
-                   style="background: linear-gradient(135deg, #7c3aed44, #a855f744); color: #c4b5fd;">
+              <div v-else class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ring-1 ring-white/20 bg-gradient-to-br from-primary/25 to-primary-light/25 text-primary-light">
                 {{ (player.username || '?').slice(0, 2).toUpperCase() }}
               </div>
               <!-- Role Icon Overlay -->
-              <div v-if="player.role && player.role !== 'NEUTRE'" class="absolute -bottom-1 -right-1 text-xs" style="text-shadow: 0 0 4px rgba(0,0,0,0.8);">
-                {{ roleIcons[player.role] }}
+              <div v-if="player.role && player.role !== 'NEUTRE'" class="absolute -bottom-1.5 -right-1.5 p-0.5 rounded-full bg-[#151525] border border-white/10 flex items-center justify-center shadow-lg">
+                <component :is="roleIcons[player.role as keyof typeof roleIcons]" class="w-3 h-3" :style="{ color: roleColors[player.role] }" />
               </div>
-              <div v-else-if="player.isSpectator" class="absolute -bottom-1 -right-1 text-xs" style="text-shadow: 0 0 4px rgba(0,0,0,0.8);">
-                👁️
+              <div v-else-if="player.isSpectator" class="absolute -bottom-1.5 -right-1.5 p-0.5 rounded-full bg-[#151525] border border-white/10 flex items-center justify-center shadow-lg">
+                <Eye class="w-3 h-3 text-slate-400" />
               </div>
             </div>
 
@@ -478,12 +521,21 @@ const currentEventStyle = computed(() => {
           <!-- ── Cinematic Game Events (Centered on table) ───────────────────── -->
           <Transition name="cinematic">
             <div v-if="gameStore.gameEvent" 
-                 class="absolute inset-0 z-40 flex items-center justify-center pointer-events-none overflow-hidden">
+                 class="absolute z-40 flex items-center justify-center pointer-events-none overflow-hidden">
               <div class="flex flex-col items-center justify-center cinematic-content">
-                <span class="text-[8rem] leading-none mb-4 filter drop-shadow-[0_0_30px_rgba(255,255,255,0.5)]">{{ gameStore.gameEvent.icon }}</span>
-                <span class="text-6xl font-black uppercase tracking-[0.2em] text-transparent bg-clip-text text-center px-4"
+                <component 
+                  :is="cinematicIcons[gameStore.gameEvent.type as keyof typeof cinematicIcons] || Flame" 
+                  class="w-32 h-32 mb-6" 
+                  :style="{ 
+                    color: gameStore.gameEvent.type === 'revolution' ? '#ef4444' : 
+                           gameStore.gameEvent.type === 'quad' ? '#fbbf24' :
+                           gameStore.gameEvent.type === 'president' ? '#ffd700' : '#64748b',
+                    filter: 'drop-shadow(0 0 30px currentColor)' 
+                  }" 
+                />
+                <span class="text-5xl font-black uppercase tracking-[0.2em] text-transparent bg-clip-text text-center px-4"
                   :style="gameStore.gameEvent.type === 'revolution' ? 'background-image: linear-gradient(to right, #f43f5e, #9f1239); text-shadow: 0 0 40px rgba(244,63,94,0.6);' : 
-                          gameStore.gameEvent.type === 'carre' ? 'background-image: linear-gradient(to right, #fbbf24, #d97706); text-shadow: 0 0 40px rgba(251,191,36,0.6);' :
+                          gameStore.gameEvent.type === 'quad' ? 'background-image: linear-gradient(to right, #fbbf24, #d97706); text-shadow: 0 0 40px rgba(251,191,36,0.6);' :
                           gameStore.gameEvent.type === 'president' ? 'background-image: linear-gradient(to bottom, #ffd700, #b8860b); text-shadow: 0 0 40px rgba(255,215,0,0.6);' :
                           'background-image: linear-gradient(to right, #a8a29e, #57534e); text-shadow: 0 0 40px rgba(120,113,108,0.6);'">
                   {{ gameStore.gameEvent.text }}
@@ -498,9 +550,10 @@ const currentEventStyle = computed(() => {
             
             <Transition name="ourien">
               <div v-if="gameStore.gameIsForcedRank && phase === 'PLAY'"
-                class="ourien-badge absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30 px-6 py-2.5 rounded-full text-base font-black tracking-widest pointer-events-none uppercase"
+                class="ourien-badge absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30 px-6 py-2.5 rounded-2xl text-base font-black tracking-widest pointer-events-none uppercase flex items-center gap-2"
                 style="background: rgba(220, 38, 38, 0.2); backdrop-filter: blur(8px); border: 2px solid rgba(239,68,68,0.6); color: #fca5a5; text-shadow: 0 0 15px rgba(239,68,68,0.8); box-shadow: 0 0 30px rgba(239,68,68,0.2); margin-top: -10px;">
-                🔒 {{ gameStore.gameIsForcedRank }} ou rien
+                <Lock class="w-5 h-5 text-red-400" />
+                <span>{{ gameStore.gameIsForcedRank }} ou rien</span>
               </div>
             </Transition>
 
@@ -521,71 +574,93 @@ const currentEventStyle = computed(() => {
           <!-- Exchange phase indicator -->
           <div v-if="isExchangePhase && myExchangeRequest && !gameStore.exchangeSubmitted"
             class="flex flex-col items-center gap-3">
-            <div class="px-6 py-3 rounded-2xl text-center"
-              style="background: rgba(251,191,36,0.15); backdrop-filter: blur(8px); border: 2px solid rgba(251,191,36,0.5);">
-              <div class="text-lg font-bold" style="color: #fbbf24;">🔄 Échange de cartes</div>
-              <div class="text-sm mt-1" style="color: #fde68a;">
+            <div class="px-6 py-3 rounded-2xl text-center flex flex-col items-center"
+              style="background: rgba(251,191,36,0.08); backdrop-filter: blur(8px); border: 1px solid rgba(251,191,36,0.3);">
+              <div class="text-base font-bold flex items-center gap-1.5" style="color: #fbbf24;">
+                <RefreshCw class="w-4 h-4 text-amber-400 animate-spin-slow" />
+                <span>Échange de cartes</span>
+              </div>
+              <div class="text-xs mt-1" style="color: #fde68a;">
                 Sélectionnez {{ myExchangeRequest.count }} carte(s) à donner
               </div>
-              <div class="text-xs mt-1" style="color: #94a3b8;">
+              <div class="text-[10px] font-semibold mt-1 opacity-70" style="color: #94a3b8;">
                 ({{ exchangeSelectedCards.length }} / {{ myExchangeRequest.count }} sélectionnée(s))
               </div>
             </div>
-            <button v-if="exchangeSelectedCards.length === myExchangeRequest.count"
+            <Button v-if="exchangeSelectedCards.length === myExchangeRequest.count"
               @click="submitExchange"
-              class="px-6 py-2.5 rounded-xl font-black text-sm uppercase tracking-wide transition-all hover:scale-105"
-              style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; cursor: pointer; box-shadow: 0 6px 20px rgba(245,158,11,0.4);">
+              variant="primary"
+              size="md"
+              :icon="Check"
+              class="!from-amber-500 !to-orange-500 hover:!from-amber-400 hover:!to-orange-400 border-amber-500/20 shadow-amber-500/20"
+            >
               Confirmer l'échange
-            </button>
+            </Button>
           </div>
 
           <div v-else-if="isExchangePhase && myExchangeRequest && gameStore.exchangeSubmitted"
-            class="px-6 py-3 rounded-2xl text-center"
-            style="background: rgba(16,185,129,0.1); backdrop-filter: blur(8px); border: 1px solid rgba(16,185,129,0.3);">
-            <div class="text-sm font-semibold" style="color: #6ee7b7;">✅ Échange soumis — en attente des autres...</div>
+            class="px-6 py-3 rounded-2xl text-center flex items-center gap-2"
+            style="background: rgba(16,185,129,0.08); backdrop-filter: blur(8px); border: 1px solid rgba(16,185,129,0.2);">
+            <Check class="w-4 h-4 text-emerald-400 animate-pulse" />
+            <div class="text-xs font-semibold" style="color: #6ee7b7;">Échange soumis — en attente des autres...</div>
           </div>
 
           <div v-else-if="isExchangePhase && !myExchangeRequest"
-            class="px-6 py-3 rounded-2xl text-center"
-            style="background: rgba(255,255,255,0.05); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.1);">
-            <div class="text-sm" style="color: #94a3b8;">⏳ En attente des échanges...</div>
+            class="px-6 py-3 rounded-2xl text-center flex items-center gap-2"
+            style="background: rgba(255,255,255,0.03); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.08);">
+            <Loader2 class="w-4 h-4 text-slate-400 animate-spin" />
+            <div class="text-xs text-slate-400" style="color: #94a3b8;">En attente des échanges...</div>
           </div>
 
           <!-- Actions -->
           <div v-if="phase === 'PLAY' && !amISpectator" class="flex gap-4 items-center">
-            <div v-if="isMyTurn" class="text-xs px-4 py-1.5 rounded-full font-bold uppercase tracking-wider animate-pulse"
-              style="background: rgba(236,72,153,0.2); color: #f472b6; border: 1px solid rgba(236,72,153,0.3);">⚡ Ton tour</div>
+            <div v-if="isMyTurn" class="text-xs px-4 py-1.5 rounded-xl font-bold uppercase tracking-wider animate-pulse flex items-center gap-1"
+              style="background: rgba(236,72,153,0.15); color: #f472b6; border: 1px solid rgba(236,72,153,0.25);">
+              <Zap class="w-3.5 h-3.5 text-pink-400 fill-pink-400" />
+              <span>Ton tour</span>
+            </div>
             <!-- Use canPlay computed — never flashes from spam clicks -->
-            <button v-if="canPlay"
+            <Button v-if="canPlay"
               @click="playSelected"
-              class="px-6 py-2.5 rounded-xl font-black text-sm uppercase tracking-wide transition-all hover:scale-105"
-              style="background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; cursor: pointer; box-shadow: 0 6px 20px rgba(139,92,246,0.4);">
+              variant="primary"
+              size="md"
+              :icon="Play"
+            >
               Jouer ({{ selectedCards.length }})
-            </button>
-            <button v-if="isMyTurn"
+            </Button>
+            <Button v-if="isMyTurn"
               @click="passTurn"
-              class="px-5 py-2.5 rounded-xl text-sm font-bold uppercase tracking-wide transition-all hover:bg-red-500/20"
-              style="background: rgba(239,68,68,0.1); color: #fca5a5; border: 1px solid rgba(239,68,68,0.3); cursor: pointer;">
+              variant="secondary"
+              size="md"
+              class="!text-red-400 hover:!text-red-300 hover:bg-red-500/10 border-red-500/25 active:bg-red-500/20"
+            >
               Passer
-            </button>
+            </Button>
           </div>
 
           <!-- Spectator message in PLAY phase -->
           <div v-if="phase === 'PLAY' && amISpectator"
-            class="px-6 py-3 rounded-2xl text-center"
+            class="px-6 py-3 rounded-2xl text-center flex items-center gap-2"
             style="background: rgba(255,255,255,0.04); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.08);">
-            <div class="text-sm font-medium" style="color: #64748b;">👁️ Vous observez la partie en tant que spectateur</div>
+            <Eye class="w-4 h-4 text-slate-400" />
+            <div class="text-sm font-medium" style="color: #64748b;">Vous observez la partie en tant que spectateur</div>
           </div>
         </div>
 
         <!-- My hand (hidden for spectators) -->
         <div v-if="!amISpectator" class="px-4 pb-4 pt-4" style="flex-shrink: 0; background: linear-gradient(0deg, rgba(0,0,0,0.4) 0%, transparent 100%);">
-          <div class="text-center text-xs mb-2 uppercase tracking-widest font-semibold" style="color: #94a3b8;">
+          <div class="text-center text-xs mb-2 uppercase tracking-widest font-semibold flex items-center justify-center gap-1.5" style="color: #94a3b8;">
             <span v-if="!phase || phase === 'LOBBY'">En attente du lancement...</span>
-            <span v-else-if="isExchangePhase && myExchangeRequest && !gameStore.exchangeSubmitted" style="color: #fbbf24; text-shadow: 0 0 10px rgba(251,191,36,0.4);">Choisissez vos cartes à échanger</span>
+            <span v-else-if="isExchangePhase && myExchangeRequest && !gameStore.exchangeSubmitted" class="flex items-center gap-1" style="color: #fbbf24; text-shadow: 0 0 10px rgba(251,191,36,0.4);">
+              <RefreshCw class="w-3.5 h-3.5 text-amber-400 animate-spin-slow" />
+              <span>Choisissez vos cartes à échanger</span>
+            </span>
             <span v-else-if="isExchangePhase && myExchangeRequest && gameStore.exchangeSubmitted" style="color: #6ee7b7;">En attente de confirmation...</span>
             <span v-else-if="isExchangePhase">En attente des échanges...</span>
-            <span v-else-if="isMyTurn" style="color: #f472b6; text-shadow: 0 0 10px rgba(244,114,182,0.4);">À toi de jouer</span>
+            <span v-else-if="isMyTurn" class="flex items-center gap-1" style="color: #f472b6; text-shadow: 0 0 10px rgba(244,114,182,0.4);">
+              <Zap class="w-3.5 h-3.5 text-pink-400 fill-pink-400 animate-pulse" />
+              <span>À toi de jouer</span>
+            </span>
             <span v-else>Tour de l'adversaire...</span>
           </div>
           <div class="flex justify-center items-end pb-2 px-2 pt-6" ref="handContainerRef"
@@ -618,16 +693,18 @@ const currentEventStyle = computed(() => {
               <span class="text-base leading-none" :style="{ color: isRed(card.suit) ? '#dc2626' : '#1e293b' }">{{ getSuitSymbol(card.suit) }}</span>
             </div>
             <div v-if="myHand.length === 0 && phase === 'PLAY'"
-              class="text-sm py-4" style="color: #475569;">
-              Tu n'as plus de cartes 🎉
+              class="text-sm py-4 flex items-center justify-center gap-1.5" style="color: #475569;">
+              <span>Tu n'as plus de cartes</span>
+              <Sparkles class="w-4 h-4 text-yellow-400 animate-bounce" />
             </div>
           </div>
         </div>
 
         <!-- Spectator hand zone placeholder -->
         <div v-else class="px-4 pb-4 pt-2" style="flex-shrink: 0;">
-          <div class="text-center text-xs uppercase tracking-widest font-semibold py-3" style="color: #334155;">
-            👁️ Spectateur — vous rejoindrez à la prochaine manche
+          <div class="text-center text-xs uppercase tracking-widest font-semibold py-3 flex items-center justify-center gap-1.5" style="color: #334155;">
+            <Eye class="w-4 h-4 text-slate-500" />
+            <span>Spectateur — vous rejoindrez à la prochaine manche</span>
           </div>
         </div>
       </div>
@@ -640,13 +717,12 @@ const currentEventStyle = computed(() => {
 
     <!-- Modale de Fin de Partie (RESULTS) -->
     <div v-if="phase === 'RESULTS'"
-      class="absolute inset-0 flex items-center justify-center z-50 bg-black/80 backdrop-blur-sm p-4">
+      class="absolute flex items-center justify-center z-50 bg-black/80 backdrop-blur-sm p-4">
       <div class="w-full max-w-md rounded-2xl shadow-2xl flex flex-col overflow-hidden"
         style="background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%); border: 1px solid rgba(255,255,255,0.1);">
         
         <div class="p-6 text-center border-b border-white/10">
-          <h2 class="text-3xl font-bold bg-clip-text text-transparent"
-              style="background-image: linear-gradient(to right, #a855f7, #ec4899);">
+          <h2 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-amber-500">
             Fin de la Manche
           </h2>
           <p class="text-sm text-slate-400 mt-2">Le Président a triomphé !</p>
@@ -654,13 +730,15 @@ const currentEventStyle = computed(() => {
 
         <div class="p-6 space-y-3">
           <div v-for="(player, idx) in players" :key="player.id"
-            class="flex items-center justify-between p-3 rounded-lg"
-            :style="{ background: 'rgba(255,255,255,0.05)', borderLeft: `4px solid ${roleColors[player.role || 'NEUTRE']}` }">
+            class="flex items-center justify-between p-3 rounded-xl"
+            :style="{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderLeft: `4px solid ${roleColors[player.role || 'NEUTRE']}` }">
             <div class="flex items-center gap-3">
-              <span class="text-2xl">{{ roleIcons[player.role || 'NEUTRE'] }}</span>
+              <div class="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
+                <component :is="roleIcons[(player.role || 'NEUTRE') as keyof typeof roleIcons]" class="w-5 h-5" :style="{ color: roleColors[player.role || 'NEUTRE'] }" />
+              </div>
               <div class="flex flex-col">
                 <span class="font-bold text-slate-100">{{ player.username }}</span>
-                <span class="text-xs" :style="{ color: roleColors[player.role || 'NEUTRE'] }">
+                <span class="text-xs uppercase tracking-wider font-semibold opacity-70" :style="{ color: roleColors[player.role || 'NEUTRE'] }">
                   {{ player.role }}
                 </span>
               </div>
@@ -671,14 +749,18 @@ const currentEventStyle = computed(() => {
           </div>
         </div>
 
-        <div class="p-6 flex justify-center gap-4 bg-black/20">
-          <button v-if="gameStore.isHost" @click="startGame"
-            class="w-full py-3 rounded-xl font-bold text-white transition-all transform hover:scale-105"
-            style="background: linear-gradient(135deg, #7c3aed, #ec4899); box-shadow: 0 4px 15px rgba(124,58,237,0.3);">
+        <div class="p-6 flex justify-center gap-4 bg-black/20 border-t border-white/5">
+          <Button v-if="gameStore.isHost" @click="startGame"
+            variant="primary"
+            size="lg"
+            full-width
+            :icon="Play"
+          >
             Relancer une Manche
-          </button>
-          <div v-else class="text-sm font-medium text-slate-400 py-3">
-            En attente du chef de salon...
+          </Button>
+          <div v-else class="text-sm font-medium text-slate-400 py-3 flex items-center gap-2">
+            <Loader2 class="w-4 h-4 text-primary animate-spin" />
+            <span>En attente du chef de salon...</span>
           </div>
         </div>
 
@@ -686,11 +768,16 @@ const currentEventStyle = computed(() => {
     </div>
 
     <!-- Règles Modale -->
-    <div v-if="showRules" class="absolute inset-0 flex items-center justify-center z-50 bg-black/80 backdrop-blur-sm p-4" @click.self="showRules = false">
-      <div class="w-full max-w-lg rounded-2xl shadow-2xl flex flex-col overflow-hidden max-h-[80vh]" style="background: #0f172a; border: 1px solid rgba(255,255,255,0.1);">
+    <div v-if="showRules" class="absolute flex items-center justify-center z-50 bg-black/80 backdrop-blur-sm p-4" @click.self="showRules = false">
+      <div class="w-full max-w-lg rounded-2xl shadow-2xl flex flex-col overflow-hidden max-h-[80vh]" style="background: #151525; border: 1px solid rgba(255,255,255,0.06);">
         <div class="p-6 border-b border-white/10 flex justify-between items-center">
-          <h2 class="text-xl font-bold text-white">📖 Règles du Président</h2>
-          <button @click="showRules = false" class="text-slate-400 hover:text-white transition-colors cursor-pointer p-1">✕</button>
+          <div class="flex items-center gap-2 text-primary font-bold">
+            <BookOpen class="w-5 h-5 text-primary" />
+            <h2 class="text-lg">Règles du Président</h2>
+          </div>
+          <Button @click="showRules = false" variant="ghost" size="sm">
+            <X class="w-4 h-4" />
+          </Button>
         </div>
         <div class="p-6 overflow-y-auto text-sm text-slate-300 space-y-4">
           <p><strong>Hiérarchie des cartes :</strong> 3, 4, 5, 6, 7, 8, 9, 10, Valet, Dame, Roi, As, 2.</p>
@@ -700,50 +787,67 @@ const currentEventStyle = computed(() => {
           <p><strong>Couper un pli :</strong> Jouer une carte de même valeur que la précédente oblige le joueur suivant à jouer cette même valeur (et non une valeur supérieure) ou à passer son tour.</p>
           <p><strong>Le Carré :</strong> Si 4 cartes de même valeur se retrouvent sur la table (jouées en une ou plusieurs fois), le pli se termine immédiatement. Le joueur qui a complété le carré remporte le pli.</p>
           <p><strong>Passer :</strong> Si vous ne pouvez ou ne voulez pas jouer, vous passez. Vous pourrez rejouer au prochain tour, sauf si tous les joueurs passent consécutivement.</p>
-          <p><strong>Rôles :</strong> Le 1er à finir est Président 👑, le 2ème Vice-Président 🥈, l'avant-dernier Vice-Trou du Cul 🥉, le dernier Trou du Cul 💩. À la manche suivante, le Président échange ses 2 pires cartes contre les 2 meilleures du TDC (et inversement). Idem pour 1 carte avec les Vices.</p>
+          <p><strong>Rôles :</strong> Le premier à finir est Président, le deuxième Vice-Président, l'avant-dernier Vice-Trou du Cul, le dernier Trou du Cul. À la manche suivante, le Président échange ses 2 pires cartes contre les 2 meilleures du TDC (et inversement). Idem pour 1 carte avec les Vices.</p>
         </div>
         <div class="p-4 border-t border-white/10 flex justify-end">
-           <button @click="showRules = false" class="px-4 py-2 rounded-lg text-sm font-semibold transition-all" style="background: rgba(255,255,255,0.1); color: white; cursor: pointer;">
+           <Button @click="showRules = false" variant="secondary" size="md">
              Fermer
-           </button>
+           </Button>
         </div>
       </div>
     </div>
 
     <!-- Paramètres de la partie Modale -->
-    <div v-if="showGameSettings" class="absolute inset-0 flex items-center justify-center z-50 bg-black/80 backdrop-blur-sm p-4" @click.self="showGameSettings = false">
-      <div class="w-full max-w-sm rounded-2xl shadow-2xl flex flex-col overflow-hidden" style="background: #0f172a; border: 1px solid rgba(255,255,255,0.1);">
+    <div v-if="showGameSettings" class="absolute flex items-center justify-center z-50 bg-black/80 backdrop-blur-sm p-4" @click.self="showGameSettings = false">
+      <div class="w-full max-w-sm rounded-2xl shadow-2xl flex flex-col overflow-hidden" style="background: #151525; border: 1px solid rgba(255,255,255,0.06);">
         <div class="p-6 border-b border-white/10 flex justify-between items-center">
-          <h2 class="text-xl font-bold text-white">⚙️ Paramètres de la partie</h2>
-          <button @click="showGameSettings = false" class="text-slate-400 hover:text-white transition-colors cursor-pointer p-1">✕</button>
+          <div class="flex items-center gap-2 text-primary font-bold">
+            <Settings class="w-5 h-5 text-primary" />
+            <h2 class="text-lg">Paramètres de la partie</h2>
+          </div>
+          <Button @click="showGameSettings = false" variant="ghost" size="sm">
+            <X class="w-4 h-4" />
+          </Button>
         </div>
         <div class="p-6 space-y-3 text-sm text-slate-300">
-          <div class="flex justify-between pb-2 border-b border-white/10">
+          <div class="flex justify-between pb-2 border-b border-white/5">
             <span>Joueurs max:</span>
-            <span class="font-semibold text-white">{{ gameStore.gameConfig?.maxPlayers || 'N/A' }}</span>
+            <span class="font-semibold text-slate-100">{{ gameStore.gameConfig?.maxPlayers || 'N/A' }}</span>
           </div>
-          <div class="flex justify-between pb-2 border-b border-white/10">
+          <div class="flex justify-between pb-2 border-b border-white/5 flex items-center">
             <span>Suites autorisées:</span>
-            <span class="font-semibold text-white">{{ gameStore.gameConfig?.enableSequences ? '✅ Oui' : '❌ Non' }}</span>
+            <span class="font-semibold flex items-center gap-1" :class="gameStore.gameConfig?.enableSequences ? 'text-emerald-400' : 'text-rose-400'">
+              <component :is="gameStore.gameConfig?.enableSequences ? Check : X" class="w-4 h-4" />
+              <span>{{ gameStore.gameConfig?.enableSequences ? 'Oui' : 'Non' }}</span>
+            </span>
           </div>
 
-          <div class="flex justify-between pb-2 border-b border-white/10">
+          <div class="flex justify-between pb-2 border-b border-white/5 flex items-center">
             <span>Révolution (Carré):</span>
-            <span class="font-semibold text-white">{{ gameStore.gameConfig?.enableRevolution ? '✅ Oui' : '❌ Non' }}</span>
+            <span class="font-semibold flex items-center gap-1" :class="gameStore.gameConfig?.enableRevolution ? 'text-emerald-400' : 'text-rose-400'">
+              <component :is="gameStore.gameConfig?.enableRevolution ? Check : X" class="w-4 h-4" />
+              <span>{{ gameStore.gameConfig?.enableRevolution ? 'Oui' : 'Non' }}</span>
+            </span>
           </div>
-          <div class="flex justify-between pb-2 border-b border-white/10">
+          <div class="flex justify-between pb-2 border-b border-white/5 flex items-center">
             <span>Révolution ramasse:</span>
-            <span class="font-semibold text-white">{{ gameStore.gameConfig?.revolutionResetsTrick ? '✅ Oui' : '❌ Non' }}</span>
+            <span class="font-semibold flex items-center gap-1" :class="gameStore.gameConfig?.revolutionResetsTrick ? 'text-emerald-400' : 'text-rose-400'">
+              <component :is="gameStore.gameConfig?.revolutionResetsTrick ? Check : X" class="w-4 h-4" />
+              <span>{{ gameStore.gameConfig?.revolutionResetsTrick ? 'Oui' : 'Non' }}</span>
+            </span>
           </div>
-          <div class="flex justify-between pb-2 border-b border-white/10">
+          <div class="flex justify-between pb-2 border-b border-white/5 flex items-center">
             <span>Échange de cartes:</span>
-            <span class="font-semibold text-white">{{ gameStore.gameConfig?.exchangeCards ? '✅ Oui' : '❌ Non' }}</span>
+            <span class="font-semibold flex items-center gap-1" :class="gameStore.gameConfig?.exchangeCards ? 'text-emerald-400' : 'text-rose-400'">
+              <component :is="gameStore.gameConfig?.exchangeCards ? Check : X" class="w-4 h-4" />
+              <span>{{ gameStore.gameConfig?.exchangeCards ? 'Oui' : 'Non' }}</span>
+            </span>
           </div>
         </div>
-        <div class="p-4 flex justify-end">
-           <button @click="showGameSettings = false" class="px-4 py-2 rounded-lg text-sm font-semibold transition-all" style="background: rgba(255,255,255,0.1); color: white; cursor: pointer;">
+        <div class="p-4 border-t border-white/5 flex justify-end">
+           <Button @click="showGameSettings = false" variant="secondary" size="md">
              Fermer
-           </button>
+           </Button>
         </div>
       </div>
     </div>
