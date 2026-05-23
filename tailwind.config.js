@@ -13,6 +13,10 @@ export default {
         'primary-light': '#b8935c',
         'primary-dark': '#855f28',
       },
+      fontFamily: {
+        cinzel: ['Cinzel', 'serif'],
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+      },
     },
   },
   plugins: [],
